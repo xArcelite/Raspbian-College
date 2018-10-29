@@ -49,7 +49,7 @@ GPIO.output(IN3,GPIO.HIGH)
 GPIO.setmode(GPIO.BCM) 
 GPIO.setwarnings(False) 
 
-def AnalogRead(self):
+def AnalogRead():
   value = [0] * (self.numSensors + 1)
   #Read Channel0~channel6 AD value
   for j in range(0, self.numSensors + 1):
@@ -82,4 +82,54 @@ def AnalogRead(self):
         print value[1:]
         return value[1:]
        
-       
+def calibrate():
+        max_sensor_values = [0]*self.numSensors
+        min_sensor_values = [0]*self.numSensors
+        for j in range(0, 10):
+        
+            sensor_values = self.AnalogRead()
+            
+            for i in range(0, self.numSensors):
+            
+                # set the max we found THIS time
+                if (j == 0) or max_sensor_values[i] < sensor_values[i]:
+                    max_sensor_values[i] = sensor_values[i]
+
+                # set the min we found THIS time
+                if (j == 0) or min_sensor_values[i] > sensor_values[i]:
+                    min_sensor_values[i] = sensor_values[i]
+
+        # record the min and max calibration values
+        for i in range(0, self.numSensors):
+            if min_sensor_values[i] > self.calibratedMin[i]:
+                self.calibratedMin[i] = min_sensor_values[i]
+            if max_sensor_values[i] < self.calibratedMax[i]:
+                self.calibratedMax[i] = max_sensor_values[i]
+                
+def readCalibrated(self):
+        value = 0
+        # read the needed values
+        sensor_values = self.AnalogRead()
+
+        for i in range(0, self.numSensors):
+
+            denominator = self.calibratedMax[i] - self.calibratedMin[i]
+
+            if denominator != 0:
+                value = (sensor_values[i] - self.calibratedMin[i]) * 1000 / denominator
+                
+            if value < 0:
+                value = 0
+            elif value > 1000:
+                value = 1000
+                
+            sensor_values[i] = value
+        
+        # print("readCalibrated",sensor_values)
+        return sensor_values
+        
+while(i==i):
+	reading = readCalibrated()
+	pos = posit(sva1)
+	print(pos)
+	if (reading
