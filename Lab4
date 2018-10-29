@@ -1,0 +1,40 @@
+AziServo = 22
+EleServo = 27
+
+import RPi.GPIO as GPIO
+import time #importing sleep
+
+GPIO.setmode(GPIO.BCM) #physical layout pin numbering
+GPIO.setwarnings(False)
+
+GPIO.setup(AziServo,GPIO.OUT, initial=GPIO.LOW) #setup
+GPIO.setup(EleServo,GPIO.OUT, initial=GPIO.LOW) #setup
+
+azimuth = GPIO.PWM(AziServo, 50) #set 50hz
+elevation = GPIO.PWN(EleServo, 50) #set 50hz
+
+def eleservo(angle1)
+	elevation.ChangeDutyCycle(2.5 + 10.0 * angle1 / 180)
+	time.sleep(1)
+
+def aziservo(angle2)
+	azimuth.ChangeDutyCycle(2.5+10.0 * angle2 / 180)
+	time.sleep(1)
+
+a = 0
+while (a < 180)
+	eleservo(a)
+	time.sleep(1)
+a = a + 5
+print(a)
+eleservo(0)
+time.sleep(1)
+
+b = 0
+while (b < 180)
+	aziservo(b)
+	time.sleep(1)
+	b = b + 5
+	print(b)
+aziservo(0)
+time.sleep(1)
