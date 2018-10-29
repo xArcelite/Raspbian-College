@@ -52,9 +52,9 @@ GPIO.setwarnings(False)
 def AnalogRead(self):
   value = [0] * (self.numSensors + 1)
   #Read Channel0~channel6 AD value
-      for j in range(0, self.numSensors + 1):
-            GPIO.output(CS, GPIO.LOW)
-            for i in range(0, 4):
+  for j in range(0, self.numSensors + 1):
+        GPIO.output(CS, GPIO.LOW)
+             for i in range(0, 4):
                 # sent 4-bit Address
                 if (j >> (3 - i)) & 0x01:
                     GPIO.output(Address, GPIO.HIGH)
@@ -77,9 +77,9 @@ def AnalogRead(self):
             for i in range(0,6):
                GPIO.output(Clock, GPIO.HIGH)
                GPIO.output(Clock, GPIO.LOW)
-            time.sleep(0.0001)
+            #time.sleep(0.0001)
             GPIO.output(CS, GPIO.HIGH)
         print value[1:]
-       return value[1:]
+        return value[1:]
        
        
