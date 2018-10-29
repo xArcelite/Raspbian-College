@@ -1,0 +1,56 @@
+import picamera
+import picamera.array
+import numpy as np
+import cv2
+import time
+
+
+with picamera.PiCamera() as camera:
+  camera.resolution = (256,160)
+  while(True):
+    with picamera.array.PiRGBArray(camera) as stream
+    camera.exposure_mode = 'auto'
+    camera.awb_mode = 'auto'
+    camera.capture(stream, format= 'rgb')
+     frame2 = stream.array
+     frame = cv2.cvtColor(frame2,cv2.COLOR)
+     cv2.imshow('frame',frame)
+     pixAverage = int(np.average(stream.array[...,]))
+     cv2.waitKey(1)
+     print frame[0,0,0]
+     v_rx = 0.0
+     v_ry = 0.0 
+     v_gx = 0.0
+     v_gy = 0.0
+     v_bx = 0.0
+     v_by = 0.0
+     i_r = 0
+     i_g = 0
+     i_b = 0
+     Mask = np.zeros((256,160))
+     for y in range(256):
+         for x in range(160):
+            it = 0
+            if(frame[x,y,2] >200):
+              it = it + 1
+            if(frame[x,y,1] <100):
+              it = it + 1
+            if(frame[x,y,0] <120):
+              it = it + 1
+            if(3 ==it):
+              v_rx = v_rx + x
+              v_bx = v_bx + x
+              v_gx = v_gx + x
+              v_ry = v_ry + y
+              v_by = v_by + y
+              v_gy = v_gy + y
+              i_r = i_r + 1
+              i_b = i_b + 1
+              i_g = i_g + 1
+              mask[x,y] = 255
+       x_ave = vrx/float(i_r)
+       y_ave = vry/float(i_r)
+       cv2.imshow('mask',mask)
+       cv.waitKey(10)
+       print frame[0,0,0]
+       print("Light Meter Value %1", pixAverage)
