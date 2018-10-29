@@ -1,0 +1,47 @@
+import RPi.GPIO as GPIO 
+import time
+import rospy
+From std_msgs.msg import String
+
+CS = 5 
+Clock = 25 
+Address = 24 
+DataOut = 23 
+
+GPIO.setmode(GPIO.BCM) 
+GPIO.setwarnings(False) 
+GPIO.setup(Clock,GPIO.OUT) 
+GPIO.setup(Address,GPIO.OUT) 
+GPIO.setup(CS,GPIO.OUT) 
+GPIO.setup(DataOut,GPIO.IN,GPIO.PUD_UP)
+
+#motor pins
+IN1 = 12 
+IN2 = 13 
+IN3 = 20 
+IN4 = 21 
+EN1 = 6 
+EN2 = 26 
+
+#motor PWM setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(IN1,GPIO.OUT)
+GPIO.setup(IN2,GPIO.OUT)
+GPIO.setup(IN3,GPIO.OUT)
+GPIO.setup(IN4,GPIO.OUT)
+GPIO.setup(EN1,GPIO.OUT)
+GPIO.setup(EN2,GPIO.OUT)
+
+#Set PWM
+pa = GPIO.PWM(EN1,500)
+pb = GPIO.PWM(EN2,500)
+Pa.start(50)
+Pb.start(50)
+
+def backward(): 
+init() 
+GPIO.output(EN1,GPIO.HIGH)
+GPIO.output(EN2,GPIO.HIGH) 
+GPIO.output(IN2,GPIO.HIGH) 
+GPIO.output(IN3,GPIO.HIGH)
