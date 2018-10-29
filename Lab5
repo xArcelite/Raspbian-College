@@ -1,13 +1,13 @@
 import RPi.GPIO as GPIO 
 import time
-import rospy
-From std_msgs.msg import String
 
+#Defining pins
 CS = 5 
 Clock = 25 
 Address = 24 
 DataOut = 23 
 
+#setting up IR sensor for pi
 GPIO.setmode(GPIO.BCM) 
 GPIO.setwarnings(False) 
 GPIO.setup(Clock,GPIO.OUT) 
@@ -23,7 +23,7 @@ IN4 = 21
 EN1 = 6 
 EN2 = 26 
 
-#motor PWM setup
+#motor setup
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(IN1,GPIO.OUT)
@@ -36,8 +36,8 @@ GPIO.setup(EN2,GPIO.OUT)
 #Set PWM
 pa = GPIO.PWM(EN1,500)
 pb = GPIO.PWM(EN2,500)
-Pa.start(50)
-Pb.start(50)
+Pa.start(25)
+Pb.start(25)
 
 def backward(): 
 init() 
@@ -45,3 +45,6 @@ GPIO.output(EN1,GPIO.HIGH)
 GPIO.output(EN2,GPIO.HIGH) 
 GPIO.output(IN2,GPIO.HIGH) 
 GPIO.output(IN3,GPIO.HIGH)
+
+GPIO.setmode(GPIO.BCM) 
+GPIO.setwarnings(False) 
