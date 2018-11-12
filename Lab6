@@ -86,6 +86,7 @@ calibratedMin = [122,126,123,130,132]
 last_value = 0
 
 #setting up IR sensors.
+#Taken from the toolbox from Alphabot library.
 def AnalogRead():
 	value = [0,0,0,0,0,0]
 	#Read Channel0~channel4 AD value
@@ -176,6 +177,11 @@ def readCalibrated():
 	return sensor_values
 	
 #This function is used to find a mean value to find the mean value. AKA the line position
+#This function uses the same logic from an analogread tree where values of each IR sensor is taken
+#Afterwards, the values of the analogreads are taken and put under a condition of "is it under a certain value?"
+#This value is 450.
+#It creates a "flag" if the condition is met. 1 = sensor read black. 0 = the sensor read white.
+
 def poserror(sval):
 	for i in range(5):
 		if (sval[i] < 450):
@@ -221,119 +227,146 @@ def poserror(sval):
 	return error
 
 def PController(sval):
+	#setting up gains (k)
 	k_u = 5.20
 	k = .46 * k_u
+	
+	#setting up position controller
 	Poscontrol = poserror(sval)*k
-	if error > 0:
-		rightw = initialspd - PosControl
-		leftw = initialspd + PosControl
-	elif error < 0:
-		rightw = initialspd - PosControl
-		leftw = initialspd + PosControl
+	
+	#this sets up the position error constraints
+	if poserror(sval) > 0:
+		rightwheel = initialspd - PosControl
+		leftwheel = initialspd + PosControl
+	elif poserror(sval) < 0:
+		rightwheel = initialspd - PosControl
+		leftwheel = initialspd + PosControl
 	else:
-		rightw = initialspd
-		leftw = initialspd
-	if leftw > 25: # Setting Upper Bound to 25
-		leftw = 25
-	if rightw > 25 :
-		rightw = 25
-	if leftw < 0 : # Setting Lower Bound to 0
-		leftw = 0
-	if rightw < 0 :
-		rightw = 0
+		rightwheel = initialspd
+		leftwheel = initialspd
 	
-	setPWMA(leftw)
-	setPWMB(rightw)
-	print(rightw)
-	print(leftw)
+	#this sets the upper/lower PWM bounds
+	if leftwheel > 25: # Setting Upper Bound to 25
+		leftwheel = 25
+	if rightwheel > 25 :
+		rightwheel = 25
+	if leftwheel < 0 : # Setting Lower Bound to 0
+		leftwheel = 0
+	if rightwheel < 0 :
+		rightwheel = 0
 	
-	if error == 4:
+	#setting PWM with wheel values
+	setPWMA(leftwheel)
+	setPWMB(rightwheel)
+	print(rightwheel)
+	print(leftwheel)
+	
+	if poserror(sval) == 4:
 		right()
-	if error == -4:
+	if poserror(sval) == -4:
 		left()
+
 	else:
 		forward()
 	return(error)
 
 def PDController(sval):
+	#setting up gains (k) and derivative time (t)
 	k_u = 5.403
 	k_p = .74 * k_u
 	t_u = 4.0
 	k_d = k_p *t_u/8
+	
 	past_error = 0
-	d_error = poserror(sval) - past_error
-	PD_control = (error*k_p) + (d_error*k_d)
-	if error > 0:
-		rightw = initialspd - PD_control
-		leftw = initialspd + PD_control
-	elif error < 0:
-		rightw = initialspd - PD_control
-		leftw = initialspd + PD_control
-		print(rightw)
-		print(leftw)
+	e_d = poserror(sval) - past_error
+	PDcontrol = (poserror(sval)*k_p) + (e_d*k_d)
+	if poserror(sval) > 0:
+		rightwheel=initialspd-PDcontrol
+		leftwheel=initialspd+PDcontrol
+	elif poserror(sval) < 0:
+		rightwheel=initialspd-PDcontrol
+		leftwheel=initialspd+PDcontrol
+		print(rightwheel)
+		print(leftwheel)
 	else:
-		rightw = initialspd
-		leftw = initialspd
-	if leftw > 25: # Upper Bound
-		leftw = 25
-	if rightw > 25 :
-		rightw = 25
-	if leftw < 0 : # Lower Bound
-		leftw = 0
-	if rightw < 0 :
-		rightw = 0
-	setPWMA(leftw)
-	setPWMB(rightw)
-	if error == 4:
+		rightwheel = initialspd
+		leftwheel = initialspd
+		
+	#this sets the upper/lower PWM bounds
+	if leftwheel > 25: # Setting Upper Bound to 25
+		leftwheel = 25
+	if rightwheel > 25 :
+		rightwheel = 25
+	if leftwheel < 0 : # Setting Lower Bound to 0
+		leftwheel = 0
+	if rightwheel < 0 :
+		rightwheel = 0
+	
+	#setting PWM with wheel values
+	setPWMA(leftwheel)
+	setPWMB(rightwheel)
+	print(rightwheel)
+	print(leftwheel)
+	
+	if poserror(sval) == 4:
 		right()
-	if error == -4:
+	if poserror(sval) == -4:
 		left()
 	else:
 		forward()
+
 	previous_error = error
 
 def PIDController(sval):
+	#setting up gains (k) and integral time (t)
 	k_u = 5.403
 	k_p = .74 * k_u
 	t_u = 4.0
 	k_d = k_p *t_u/8
 	k_i = .4*k_d/t_u
+
 	past_error = 0
-	d_error = poserror(sval) - past_error
-	i_error = poserror(sval) + past_error
-	PID_control = (poserror(sval)*k_p) + (d_error*k_d) + (i_error*k_i)
+	e_d = poserror(sval) - past_error
+	e_i = poserror(sval) + past_error
+	PID_control = (poserror(sval)*k_p) + (e_d*k_d) + (e_i*k_i)
 	if error > 0:
-		rightw = initialspd - PID_control
-		leftw = initialspd + PID_control
+		rightwheel = initialspd - PID_control
+		leftwheel = initialspd + PID_control
 	elif error < 0:
-		rightw = init_speed - PID_control
-		leftw = init_speed + PID_control
-		print(rightw)
-		print(leftw)
+		rightwheel = initialspd - PID_control
+		leftwheel = initialspd + PID_control
+		print(rightwheel)
+		print(leftwheel)
 	else:
-		rightw = initialspd
-		leftw = initialspd
-	if leftw < 0 : # cannot go below 0
-		leftw = 0
-		
-	if rightw < 0 :
-		rightw = 0
-	if leftw > 25: # cannot go above 30
-		leftw = 25
-	if rightw > 25 :
-		rightw = 25
-	setPWMA(leftw)
-	setPWMB(rightw)
+		rightwheel = initialspd
+		leftwheel = initialspd
+	
+	#this sets the upper/lower PWM bounds
+	if leftwheel > 25: # Setting Upper Bound to 25
+		leftwheel = 25
+	if rightwheel > 25 :
+		rightwheel = 25
+	if leftwheel < 0 : # Setting Lower Bound to 0
+		leftwheel = 0
+	if rightwheel < 0 :
+		rightwheel = 0
+	
+	#setting PWM with wheel values
+	setPWMA(leftwheel)
+	setPWMB(rightwheel)
+	print(rightwheel)
+	print(leftwheel)
+	
 	if poserror(sval) == 4:
 		right()
-		time.sleep(.1)
 	if poserror(sval) == -4:
 		left()
-		time.sleep(.1)
 	else:
 		forward()
 	previous_error = error
 
+#Working with ROS
+#Subscriber
 def talker():
 	pub = rospy.Publisher('chatter', Vector3, queue_size=10)
 	rospy.init_node('talker',anonymous=True)
@@ -345,6 +378,8 @@ def talker():
 		pub.publish(helloflt)
 		helloflt = helloflt + 5
 		rate.sleep()
+
+#Publisher
 def listener():
 	rospy.init_node('listener',anonymous=True)
 	rospy.Subscriber('chatter',Vector3,callback)
