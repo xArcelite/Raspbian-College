@@ -1,1 +1,376 @@
+import RPi.GPIO as GPIO
+import time
+
+#pins for IR Sensor
+CS = 5
+Clock = 25
+Address = 24
+DataOut = 23
+
+#setup for pi
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+#setup for the IR sensor
+GPIO.setup(Clock,GPIO.OUT)
+GPIO.setup(Address,GPIO.OUT)
+GPIO.setup(CS,GPIO.OUT)
+GPIO.setup(DataOut,GPIO.IN,GPIO.PUD_UP)
+
+#pins for motor
+in1 = 12
+in2 = 13
+in3 = 20
+in4 = 21
+ena = 6
+enb = 26
+
+#setup for motor
+GPIO.setup(in1,GPIO.OUT)
+GPIO.setup(in2,GPIO.OUT)
+GPIO.setup(in3,GPIO.OUT)
+GPIO.setup(in4,GPIO.OUT)
+GPIO.setup(ena,GPIO.OUT)
+GPIO.setup(enb,GPIO.OUT)
+
+#setting the pulse modulation width of both of the motors
+PWMA = GPIO.PWM(ena,500)
+PWMB = GPIO.PWM(enb,500)
+
+#setting the motor speed
+initialspd = 15
+error = 0
+PWMA.start(initialspd)
+PWMB.start(initialspd)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+#number of sensors as well as calibrate max and min lists
+#these list are subject to change each time the program runs
+numSensors = 5
+calibratedMax = [946,900,657,948,939]
+calibratedMin = [132,116,114,140,130]
+last_value = 0
+
+def AnalogRead():
+	value = [0,0,0,0,0,0]
+	#Read Channel0~channel4 AD value
+	for j in range(0,6):
+		GPIO.output(CS, GPIO.LOW)
+		for i in range(0,4):
+			#sent 4-bit Address
+			if(((j) >> (3 - i)) & 0x01):
+				GPIO.output(Address,GPIO.HIGH)
+			else:
+				GPIO.output(Address,GPIO.LOW)
+			#read MSB 4-bit data
+			value[j] <<= 1
+			if(GPIO.input(DataOut)):
+				value[j] |= 0x01
+			GPIO.output(Clock,GPIO.HIGH)
+			GPIO.output(Clock,GPIO.LOW)
+		for i in range(0,6):
+			#read LSB 8-bit data
+			value[j] <<= 1
+			if(GPIO.input(DataOut)):
+				value[j] |= 0x01
+			GPIO.output(Clock,GPIO.HIGH)
+			GPIO.output(Clock,GPIO.LOW)
+		#no mean ,just delay
+		for i in range(0,6):
+			GPIO.output(Clock,GPIO.HIGH)
+			GPIO.output(Clock,GPIO.LOW)
+		#time.sleep(0.0001)
+		GPIO.output(CS,GPIO.HIGH)
+	return value[1:]
+
+def calibrate():
+	#lists created to store the temp max and min values of the sensor data
+	max_sensor_values = [0]*numSensors
+	min_sensor_values = [0]*numSensors
+	#will run the test 10 times
+	for j in range(0,10):
+		#this statement gives the user to move the sensor to the white space
+		if(j==0):
+			print("gotowhite")
+			time.sleep(2)
+		#this statement gives the user time to move the sensor to the black space
+		if(j == 5):
+			
+			print("gotoblack")
+			time.sleep(2)
+		#read in values
+		sensor_values = AnalogRead();
+		
+		for i in range(0,numSensors):
+		
+			# set the max we found THIS time
+			if((j == 0) or max_sensor_values[i] < sensor_values[i]):
+				max_sensor_values[i] = sensor_values[i]
+
+			# set the min we found THIS time
+			if((j == 0) or min_sensor_values[i] > sensor_values[i]):
+				min_sensor_values[i] = sensor_values[i]
+
+	# record the min and max calibration values
+	for i in range(0,numSensors):
+		if(min_sensor_values[i] > calibratedMin[i]):
+			calibratedMin[i] = min_sensor_values[i]
+		if(max_sensor_values[i] < calibratedMax[i]):
+			calibratedMax[i] = max_sensor_values[i]
+
+def readCalibrated():
+	value = 0
+	#read the needed values
+	sensor_values = AnalogRead();
+
+	for i in range (0,numSensors):
+		#sets read in analog values to range between 0-1000
+		denominator = calibratedMax[i] - calibratedMin[i]
+		#Normalizing the data
+		if(denominator != 0):
+			value = (sensor_values[i] - calibratedMin[i])* 1000 / denominator
+			
+		if(value < 0):
+			value = 0
+		elif(value > 1000):
+			value = 1000
+			
+		sensor_values[i] = value
+	
+	print("readCalibrated",sensor_values)
+	return sensor_values
+
+def setPWMA(value):
+	PWMA.ChangeDutyCycle(value)
+#set speed of motor
+def setPWMB(value):
+	PWMB.ChangeDutyCycle(value)
+#set the motor config to move foward
+def forward():
+	GPIO.output(in1,GPIO.HIGH)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.HIGH)
+#set motor config to stop
+def stop():
+	GPIO.output(in1,GPIO.LOW)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.LOW)
+#set all motor config to low but right pin 4 is high to turn left
+def left():
+	GPIO.output(in1,GPIO.LOW)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.HIGH)
+#set all motor config to low but left pin 1 is high to turn right
+def right():
+	GPIO.output(in1,GPIO.HIGH)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.LOW)
+#this function gives the position of the line under the sensor array using mean value
+def posit_error(sval):
+	
+	for i in range(5):
+		if (sval[i] < 400):
+			sval[i] = 1
+		else:
+			sval[i] = 0
+	print(sval)
+	
+	if (sval[0] < 1) and (sval[1] < 1) and (sval[2] < 1) and (sval[3] < 1) and (sval[4] >= 1):
+		#  Sensors read: 00001
+		error = 3
+	elif (sval[0] < 1) and (sval[1] < 1) and (sval[2] < 1) and (sval[3] >= 1) and (sval[4] >= 1):
+		# Sensors read: 00011
+		error = 2
+	elif (sval[0] < 1) and (sval[1] < 1) and (sval[2] >= 1) and (sval[3] >= 1) and (sval[4] >= 1):
+		# Sensors read 00111
+		error = 1
+	elif (sval[0] < 1) and (sval[1] >= 1) and (sval[2] >= 1) and (sval[3] >= 1) and (sval[4] < 1):
+		# Sensors read 01110
+		error = 0
+	elif (sval[0] >= 1) and (sval[1] >= 1) and (sval[2] >= 1) and (sval[3] < 1) and (sval[4] < 1):
+		# Sensors read 11100
+		error = -1
+	elif (sval[0] >= 1) and (sval[1] >= 1) and (sval[2] < 1) and (sval[3] < 1) and (sval[4] < 1):
+		# Sensors read: 11000
+		error = -2
+	elif (sval[0] >= 1) and (sval[1] < 1) and (sval[2] < 1) and (sval[3] < 1) and (sval[4] < 1):
+		# Sensors read: 10000
+		error = -3
+	elif (sval[0] < 1) and (sval[1] >= 1) and (sval[2] >= 1) and (sval[3] >= 1) and (sval[4] >= 1):
+		# Sensors read: 01111
+		error = 4
+	elif (sval[0] >= 1) and (sval[1] >= 1) and (sval[2] >= 1) and (sval[3] >= 1) and (sval[4] < 1):
+		# Sensors read: 11110
+		error = -4
+	elif (sval[0] < 1) and (sval[1] < 1) and (sval[2] < 1) and (sval[3] < 1) and (sval[4] < 1):
+	# Sensors read: 00000
+		error = 'none'
+	else:
+		error = 0
+	
+	return error
+
+def feedback_prop(sval):
+	k_u = 5.37
+	k = .5 * k_u
+	error = posit_error(sval)
+	P_control = error*k
+	if error > 0:
+		rightw = initialspd - P_control
+		leftw = initialspd + P_control
+	elif error < 0:
+		rightw = initialspd - P_control
+		leftw = initialspd + P_control
+	else:
+		rightw = initialspd
+		leftw = initialspd
+	if leftw < 0 : # cannot go below 0
+		leftw = 0
+	if rightw < 0 :
+		rightw = 0
+	if leftw > 25: # cannot go above 30
+		leftw = 25
+	if rightw > 25 :
+		rightw = 25
+	
+	setPWMA(leftw)
+	setPWMB(rightw)
+	print(rightw)
+	print(leftw)
+	
+	if error == 4:
+		right()
+	if error == -4:
+		left()
+	else:
+		forward()
+	return(error)
+
+def feedback_prop_der(sval):
+	k_u = 5.372
+	k_p = .8 * k_u
+	t_u = 4.2
+	k_d = k_p *t_u/8
+	previous_error = 0
+	error = posit_error(sval)
+	d_error = error - previous_error
+	PD_control = (error*k_p) + (d_error*k_d)
+	if error > 0:
+		rightw = initialspd - PD_control
+		leftw = initialspd + PD_control
+	elif error < 0:
+		rightw = initialspd - PD_control
+		leftw = initialspd + PD_control
+		print(rightw)
+		print(leftw)
+	else:
+		rightw = initialspd
+		leftw = initialspd
+	if leftw < 0 : # cannot go below 0
+		leftw = 0
+	if rightw < 0 :
+		rightw = 0
+	if leftw > 25: # cannot go above 30
+		leftw = 25
+	if rightw > 25 :
+		rightw = 25
+	setPWMA(leftw)
+	setPWMB(rightw)
+	if error == 4:
+		right()
+	if error == -4:
+		left()
+	else:
+		forward()
+	previous_error = error
+
+def feedback_prop_der_int(sval):
+	k_u = 5.372
+	k_p = .8 * k_u
+	t_u = 4.2
+	k_d = k_p *t_u/8
+	k_i = .4*k_d/t_u
+	previous_error = 0
+	error = posit_error(sval)
+	d_error = error - previous_error
+	i_error = error + previous_error
+	PID_control = (error*k_p) + (d_error*k_d) + (i_error*k_i)
+	if error > 0:
+		rightw = initialspd - PID_control
+		leftw = initialspd + PID_control
+	elif error < 0:
+		rightw = init_speed - PID_control
+		leftw = init_speed + PID_control
+		print(rightw)
+		print(leftw)
+	else:
+		rightw = initialspd
+		leftw = initialspd
+	if leftw < 0 : # cannot go below 0
+		leftw = 0
+		
+	if rightw < 0 :
+		rightw = 0
+	if leftw > 25: # cannot go above 30
+		leftw = 25
+	if rightw > 25 :
+		rightw = 25
+	setPWMA(leftw)
+	setPWMB(rightw)
+	if error == 4:
+		right()
+		time.sleep(.1)
+	if error == -4:
+		left()
+		time.sleep(.1)
+	else:
+		forward()
+	previous_error = error
+
+def talker():
+	pub = rospy.Publisher('chatter', Vector3, queue_size=10)
+	rospy.init_node('talker',anonymous=True)
+	rate = rospy.Rate(10)
+	helloflt = 5
+	while not rospy.is_shutdown():
+		time.sleep(2)
+		rospy.loginfo(helloflt)
+		pub.publish(helloflt)
+		helloflt = helloflt + 5
+		rate.sleep()
+def listener():
+	rospy.init_node('listener',anonymous=True)
+	rospy.Subscriber('chatter',Vector3,callback)
+	rospy.spin()
+	
+def callback(data):
+	rospy.loginfo(str(data.x) + str(data.y) + str(data.z)
+
+if __name__ -- '__main__':
+	listener
+
+	#stop motor	
+stop()
+time.sleep(3)
+#set the speed to slow
+setPWMA(initialspd)
+setPWMB(initialspd)
+#calibrate the white and black min and max values
+calibrate()
+print("setup")
+time.sleep(4)
+pos_e = 0
+while(pos_e != 'none'):
+	#get the normalized data from the sensors
+	sval = readCalibrated()
+	#find the position of the line
+	pos_e = feedback_prop_der_int(sval)
+	#forward()
+	print(pos_e)
 
