@@ -1,0 +1,33 @@
+import picamera
+import picamera.array
+import numpy as np
+import cv2
+import time
+
+with picamera.PiCmera() as camera:
+  camera.resolution = (256,160)
+  while(True):
+    with picamera.array.PiRGBArray(camera) as stream:
+      camera.exposure_mode = 'auto'
+      camera.awb_mode = 'auto'
+      camera.capture(stream, format = 'bgr')
+      frame2 = stream.array
+      frame = cv2.GaussianBlur(frame2, (11, 11), 0)
+      hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+      pixAverage = int(np.average(stream.array[...,1]))
+      cv2.waitKey(1)
+      
+      #setting values for HSV
+      greenlow = np.array([29,86,6])
+      greenhigh = np.array([64,255,255])
+      
+      #This is the one that shows only green values. 
+      #The results are eroded and blurred for FPS purposes (video)
+      mask = cv2.inRange(hsv,green1,green2)
+      mask = cv2.erode(mask, None, iterations=2)
+      mask = cv2.dilate(mask, None, iterations=2)
+      
+     cv2.imshow('Frame',frame2)
+     cv2.imshow('Mask',mask)
+     
+     #youtube: https://youtu.be/F7pqaN8PIr0
