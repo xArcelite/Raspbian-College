@@ -38,3 +38,5 @@ while (b < 180)
 	print(b)
 aziservo(0)
 time.sleep(1)
+
+#Youtube: https://youtu.be/FVbTi2KIygU
