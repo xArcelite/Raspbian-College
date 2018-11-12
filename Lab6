@@ -1,23 +1,23 @@
 import RPi.GPIO as GPIO
 import time
 
-#pins for IR Sensor
+#IR Sensor pins
 CS = 5
 Clock = 25
 Address = 24
 DataOut = 23
 
-#setup for pi
+#Pi setup.
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-#setup for the IR sensor
+#Setting up the GPIO pins for the IR sensor
 GPIO.setup(Clock,GPIO.OUT)
 GPIO.setup(Address,GPIO.OUT)
 GPIO.setup(CS,GPIO.OUT)
 GPIO.setup(DataOut,GPIO.IN,GPIO.PUD_UP)
 
-#pins for motor
+#Motor Pins
 in1 = 12
 in2 = 13
 in3 = 20
@@ -25,7 +25,7 @@ in4 = 21
 ena = 6
 enb = 26
 
-#setup for motor
+#Motor setup
 GPIO.setup(in1,GPIO.OUT)
 GPIO.setup(in2,GPIO.OUT)
 GPIO.setup(in3,GPIO.OUT)
@@ -33,9 +33,41 @@ GPIO.setup(in4,GPIO.OUT)
 GPIO.setup(ena,GPIO.OUT)
 GPIO.setup(enb,GPIO.OUT)
 
-#setting the pulse modulation width of both of the motors
+#Setting PWM's.
 PWMA = GPIO.PWM(ena,500)
 PWMB = GPIO.PWM(enb,500)
+
+#Setting PWM's
+def setPWMA(value):
+	PWMA.ChangeDutyCycle(value)
+	
+def setPWMB(value):
+	PWMB.ChangeDutyCycle(value)
+	
+#Setting H-Bridge
+def forward():
+	GPIO.output(in1,GPIO.HIGH)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.HIGH)
+	
+def stop():
+	GPIO.output(in1,GPIO.LOW)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.LOW)
+	
+def left():
+	GPIO.output(in1,GPIO.LOW)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.HIGH)
+	
+def right():
+	GPIO.output(in1,GPIO.HIGH)
+	GPIO.output(in2,GPIO.LOW)
+	GPIO.output(in3,GPIO.LOW)
+	GPIO.output(in4,GPIO.LOW)
 
 #setting the motor speed
 initialspd = 15
@@ -43,16 +75,17 @@ error = 0
 PWMA.start(initialspd)
 PWMB.start(initialspd)
 
+#setting some GPIO setmodes again.
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-#number of sensors as well as calibrate max and min lists
-#these list are subject to change each time the program runs
+#These are Maximum and Minimum calibration limits. These are open to changing.
 numSensors = 5
-calibratedMax = [946,900,657,948,939]
-calibratedMin = [132,116,114,140,130]
+calibratedMax = [940,930,640,940,922]
+calibratedMin = [122,126,123,130,132]
 last_value = 0
 
+#setting up IR sensors.
 def AnalogRead():
 	value = [0,0,0,0,0,0]
 	#Read Channel0~channel4 AD value
@@ -141,41 +174,11 @@ def readCalibrated():
 	
 	print("readCalibrated",sensor_values)
 	return sensor_values
-
-def setPWMA(value):
-	PWMA.ChangeDutyCycle(value)
-#set speed of motor
-def setPWMB(value):
-	PWMB.ChangeDutyCycle(value)
-#set the motor config to move foward
-def forward():
-	GPIO.output(in1,GPIO.HIGH)
-	GPIO.output(in2,GPIO.LOW)
-	GPIO.output(in3,GPIO.LOW)
-	GPIO.output(in4,GPIO.HIGH)
-#set motor config to stop
-def stop():
-	GPIO.output(in1,GPIO.LOW)
-	GPIO.output(in2,GPIO.LOW)
-	GPIO.output(in3,GPIO.LOW)
-	GPIO.output(in4,GPIO.LOW)
-#set all motor config to low but right pin 4 is high to turn left
-def left():
-	GPIO.output(in1,GPIO.LOW)
-	GPIO.output(in2,GPIO.LOW)
-	GPIO.output(in3,GPIO.LOW)
-	GPIO.output(in4,GPIO.HIGH)
-#set all motor config to low but left pin 1 is high to turn right
-def right():
-	GPIO.output(in1,GPIO.HIGH)
-	GPIO.output(in2,GPIO.LOW)
-	GPIO.output(in3,GPIO.LOW)
-	GPIO.output(in4,GPIO.LOW)
-#this function gives the position of the line under the sensor array using mean value
-def posit_error(sval):
 	
+#This function is used to find a mean value to find the mean value. AKA the line position
+def poserror(sval):
 	for i in range(5):
-		if (sval[i] < 400):
+		if (sval[i] < 450):
 			sval[i] = 1
 		else:
 			sval[i] = 0
@@ -209,6 +212,7 @@ def posit_error(sval):
 		# Sensors read: 11110
 		error = -4
 	elif (sval[0] < 1) and (sval[1] < 1) and (sval[2] < 1) and (sval[3] < 1) and (sval[4] < 1):
+	
 	# Sensors read: 00000
 		error = 'none'
 	else:
@@ -216,28 +220,27 @@ def posit_error(sval):
 	
 	return error
 
-def feedback_prop(sval):
-	k_u = 5.37
-	k = .5 * k_u
-	error = posit_error(sval)
-	P_control = error*k
+def PController(sval):
+	k_u = 5.20
+	k = .46 * k_u
+	Poscontrol = poserror(sval)*k
 	if error > 0:
-		rightw = initialspd - P_control
-		leftw = initialspd + P_control
+		rightw = initialspd - PosControl
+		leftw = initialspd + PosControl
 	elif error < 0:
-		rightw = initialspd - P_control
-		leftw = initialspd + P_control
+		rightw = initialspd - PosControl
+		leftw = initialspd + PosControl
 	else:
 		rightw = initialspd
 		leftw = initialspd
-	if leftw < 0 : # cannot go below 0
-		leftw = 0
-	if rightw < 0 :
-		rightw = 0
-	if leftw > 25: # cannot go above 30
+	if leftw > 25: # Setting Upper Bound to 25
 		leftw = 25
 	if rightw > 25 :
 		rightw = 25
+	if leftw < 0 : # Setting Lower Bound to 0
+		leftw = 0
+	if rightw < 0 :
+		rightw = 0
 	
 	setPWMA(leftw)
 	setPWMB(rightw)
@@ -252,14 +255,13 @@ def feedback_prop(sval):
 		forward()
 	return(error)
 
-def feedback_prop_der(sval):
-	k_u = 5.372
-	k_p = .8 * k_u
-	t_u = 4.2
+def PDController(sval):
+	k_u = 5.403
+	k_p = .74 * k_u
+	t_u = 4.0
 	k_d = k_p *t_u/8
-	previous_error = 0
-	error = posit_error(sval)
-	d_error = error - previous_error
+	past_error = 0
+	d_error = poserror(sval) - past_error
 	PD_control = (error*k_p) + (d_error*k_d)
 	if error > 0:
 		rightw = initialspd - PD_control
@@ -272,14 +274,14 @@ def feedback_prop_der(sval):
 	else:
 		rightw = initialspd
 		leftw = initialspd
-	if leftw < 0 : # cannot go below 0
-		leftw = 0
-	if rightw < 0 :
-		rightw = 0
-	if leftw > 25: # cannot go above 30
+	if leftw > 25: # Upper Bound
 		leftw = 25
 	if rightw > 25 :
 		rightw = 25
+	if leftw < 0 : # Lower Bound
+		leftw = 0
+	if rightw < 0 :
+		rightw = 0
 	setPWMA(leftw)
 	setPWMB(rightw)
 	if error == 4:
@@ -290,17 +292,16 @@ def feedback_prop_der(sval):
 		forward()
 	previous_error = error
 
-def feedback_prop_der_int(sval):
-	k_u = 5.372
-	k_p = .8 * k_u
-	t_u = 4.2
+def PIDController(sval):
+	k_u = 5.403
+	k_p = .74 * k_u
+	t_u = 4.0
 	k_d = k_p *t_u/8
 	k_i = .4*k_d/t_u
-	previous_error = 0
-	error = posit_error(sval)
-	d_error = error - previous_error
-	i_error = error + previous_error
-	PID_control = (error*k_p) + (d_error*k_d) + (i_error*k_i)
+	past_error = 0
+	d_error = poserror(sval) - past_error
+	i_error = poserror(sval) + past_error
+	PID_control = (poserror(sval)*k_p) + (d_error*k_d) + (i_error*k_i)
 	if error > 0:
 		rightw = initialspd - PID_control
 		leftw = initialspd + PID_control
@@ -323,10 +324,10 @@ def feedback_prop_der_int(sval):
 		rightw = 25
 	setPWMA(leftw)
 	setPWMB(rightw)
-	if error == 4:
+	if poserror(sval) == 4:
 		right()
 		time.sleep(.1)
-	if error == -4:
+	if poserror(sval) == -4:
 		left()
 		time.sleep(.1)
 	else:
