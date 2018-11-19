@@ -41,7 +41,7 @@ Pb.start(25)
 
 #Setting up Motor movement
 def setPWMA(self,value):
-	self.PWMA.ChangeDutyCycle(value
+	self.PWMA.ChangeDutyCycle(value)
 	
 def setPWMB(self,value):
 	self.PWMB.ChangeDutyCycle(value)
@@ -167,3 +167,41 @@ def readCalibrated():
 	
 	print("readCalibrated",sensor_values)
 	return sensor_values
+	
+def position(sva1)
+	pos = (0*sva1)[0]+1000*sva1[1]+2000*sva1[2]+3000*sva1[3]+4000*sva1[4])/(sva1[0]+sva1[1]+sva1[2]+sva1[3]+sva1[4])
+
+#Stopping the motor
+stop()
+time.sleep(2)
+
+#Calibration phase, setting motors slowly to read the line
+setPWMA(20)
+setPWMB(20)
+calibrate()
+print("Calibrating...")
+time.sleep(5)
+
+#while True loop to keep the robot going
+while(True):
+	#we get the reading from the sensors
+	sva1 = readCalibrated()
+	#we take the position of the line
+	pos = position(sva1)
+	if (sva1[3]<220):
+		#moving to the right if sensor 4 reads the line
+		pwmwanted = (10*(pos-2000)/2000))+30
+		#setPWMA(pwmwanted)
+		right()
+	elif(sva1[1]<250):
+		#moving to the left if sensor 2 reads the line
+		pwmwanted = (10*((abs(pos-2000))/2000))+30
+		#setPWMB(pwmwanted)
+		left()
+	else:
+		forward()
+		#moving forward when line is in the middle
+	time.sleep(0.01)
+	#print for accurizing
+	print(pos)
+	
