@@ -40,7 +40,7 @@ def tracker(frame2):
 	cv2.circle(frame2, cent, 5, (0,0,255), 1)
         #was experimenting with ordering
         #cv2.circle(frame2, ctr, 2, (0,0,255), 1)
-        pts.appendleft(center)
+        pts.appendleft(cent)
    	for i in range(1, len(pts)):
 	   cv2.line(frame, pts[i - 1], pts[i], (0,0,255), 1)
     
@@ -104,7 +104,7 @@ with picamera.PiCmera() as camera:
 	        #cv2.circle(frame2, ctr, 2, (0,0,255), 1)
 		
 		#updating points
-        	pts.appendleft(center)
+        	pts.appendleft(cent)
    		for i in range(1, len(pts)):
 			#drawing a line
 			cv2.line(frame, pts[i - 1], pts[i], (0,0,255), 1)
