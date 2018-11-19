@@ -193,7 +193,7 @@ while(True):
 		pwmwanted = (10*(pos-2000)/2000))+30
 		#setPWMA(pwmwanted)
 		right()
-	elif(sva1[1]<250):
+	elif(sva1[1]<220):
 		#moving to the left if sensor 2 reads the line
 		pwmwanted = (10*((abs(pos-2000))/2000))+30
 		#setPWMB(pwmwanted)
