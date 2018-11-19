@@ -205,3 +205,29 @@ while(True):
 	#print for accurizing
 	print(pos)
 	
+#Working with ROS
+#Subscriber
+def talker():
+	#We use Vector 3 because the rospy uses x/y/z coordinates.
+	pub = rospy.Publisher('chatter', Vector3, queue_size=10)
+	rospy.init_node('talker',anonymous=True)
+	rate = rospy.Rate(10)
+	helloworld = 4
+	while not rospy.is_shutdown():
+		time.sleep(3)
+		rospy.loginfo(helloworld)
+		pub.publish(helloworld)
+		helloworld = helloword + 4
+		rate.sleep()
+
+#Publisher
+def listener():
+	rospy.init_node('listener',anonymous=True)
+	rospy.Subscriber('chatter', Vector3, callback)
+	rospy.spin()
+	
+def callback(data):
+	rospy.loginfo(str(data.x) + str(data.y) + str(data.z)
+
+if __name__ -- '__main__':
+	listener()
