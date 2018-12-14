@@ -5,10 +5,12 @@ import RPi.GPIO as GPIO
 import time
 
 #Defining pins
-CS = 5 
+CS = 5 #Camera
 Clock = 25 
 Address = 24 
 DataOut = 23 
+DR = 16 #Obstacle Avoidance
+DL = 19
 
 #setting up IR sensor for pi
 GPIO.setmode(GPIO.BCM) 
@@ -17,6 +19,8 @@ GPIO.setup(Clock,GPIO.OUT)
 GPIO.setup(Address,GPIO.OUT) 
 GPIO.setup(CS,GPIO.OUT) 
 GPIO.setup(DataOut,GPIO.IN,GPIO.PUD_UP)
+GPIO.setup(DR,GPIO.IN,GPIO.PUD_UP)
+GPIO.setup(DL,GPIO.IN,GPIO.PUD_UP)
 
 #motor pins
 IN1 = 12 
@@ -170,6 +174,24 @@ def readCalibrated():
 	
 	print("readCalibrated",sensor_values)
 	return sensor_values
+	
+def obstacleforward():
+	try:
+		while True:
+			DR_status = GPIO.input(DR)
+			DL_status = GPIO.input(DL)
+			if((DL_status == 1) and (DR_status == 1)):
+				Ab.forward()
+			elif((DL_status == 1) and (DR_status == 0)):
+				Ab.left()
+			elif((DL_status == 0) and (DR_status == 1)):
+				Ab.right()
+			else:
+				Ab.backward()
+				time.sleep(0.5)
+				Ab.left()
+				time.sleep(0.5)
+				Ab.stop()
 
 def lighttracker
 
