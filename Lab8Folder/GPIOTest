@@ -1,0 +1,92 @@
+import cv2.cv as cv
+import RPi.GPIO as GPIO
+from time
+
+#motor pins
+IN1 = 12 
+IN2 = 13 
+IN3 = 20 
+IN4 = 21 
+EN1 = 6 
+EN2 = 26 
+AziServo = 22
+EleServo = 27
+
+#motor setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(IN1,GPIO.OUT)
+GPIO.setup(IN2,GPIO.OUT)
+GPIO.setup(IN3,GPIO.OUT)
+GPIO.setup(IN4,GPIO.OUT)
+GPIO.setup(EN1,GPIO.OUT)
+GPIO.setup(EN2,GPIO.OUT)
+GPIO.setup(AziServo,GPIO.OUT, initial=GPIO.LOW) #setup
+GPIO.setup(EleServo,GPIO.OUT, initial=GPIO.LOW) #setup
+
+#Set PWM
+pa = GPIO.PWM(EN1,500)
+pb = GPIO.PWM(EN2,500)
+Pa.start(25)
+Pb.start(25)
+
+azimuth = GPIO.PWM(AziServo, 50)
+elevation = GPIO.PWN(EleServo, 50)
+
+def setPWMA(self,value):
+	self.PWMA.ChangeDutyCycle(value)
+	
+def setPWMB(self,value):
+	self.PWMB.ChangeDutyCycle(value)
+  
+def eleservo(angle1)
+	elevation.ChangeDutyCycle(2.5 + 10.0 * angle1 / 180)
+	time.sleep(1)
+
+def aziservo(angle2)
+	azimuth.ChangeDutyCycle(2.5+10.0 * angle2 / 180)
+	time.sleep(1)
+
+def forward():
+	GPIO.output(IN1,GPIO.HIGH)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.HIGH)
+
+def stop():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.LOW)
+
+def backward():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.HIGH)
+	GPIO.output(IN3,GPIO.HIGH)
+	GPIO.output(IN4,GPIO.LOW)
+
+def left():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.HIGH)
+
+def right():
+	GPIO.output(IN1,GPIO.HIGH)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.LOW)
+  
+def attention():
+  GPIO.output(AziServo,GPIO.LOW)
+  GPIO.output(EleServo,GPIO.HIGH)
+  
+while True:
+
+  elevation.ChangeDutyCycle(2.5 + 10.0 * 45 / 180)
+  time.sleep(1.0)
+	forward()
+	stand()
+	time.sleep(1.0)
+	#stop()
+	#time.sleep(0.1)
