@@ -1,0 +1,56 @@
+def SafeForward():
+    global lc
+    global rc
+    DR_status = GPIO.input(DR)
+    DL_status = GPIO.input(DL)
+    print(DL_status)
+    print(DR_status)
+    curtime = time.time()
+
+    while(DL_status == 1 and DR_status == 1):
+        global wtime
+        forward()
+        ftime = time.time()
+        wtime = ftime-stime
+        #print(wtime)
+        if (GPIO.event_detected(EL)):
+            lc = lc +1
+            #print(lc)
+        if (GPIO.event_detected(ER)):
+            rc = rc +1
+            #print(rc)
+        DR_status = GPIO.input(DR)
+        DL_status = GPIO.input(DL)
+        stoptime = time.time()
+        elap = stoptime - curtime
+        if (elap > 5.5):
+            findPoint()
+            curtime = time.time()
+#lets go
+def moving():
+    endcon = 0
+    while endcon < 15000:
+        endcon = findPoint1()
+        SafeForward()
+        listofAnlges = [1,2,3,4]
+        ranc = random.choice(listofAnlges)
+        if(ranc == 1):
+            rleft()
+            time.sleep(.53)
+            stop()
+        elif(ranc == 2):
+            rleft()
+            time.sleep(.43)
+            stop()
+        elif(ranc == 3):
+            rright()
+            time.sleep(.43)
+            stop()
+        else:
+            rright()
+            time.sleep(.53)
+            stop()
+        time.sleep(.5)
+    print rc
+    print lc
+    print wtime
