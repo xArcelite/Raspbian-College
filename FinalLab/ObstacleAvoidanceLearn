@@ -26,7 +26,8 @@ def SafeForward():
         if (elap > 5.5):
             findPoint()
             curtime = time.time()
-#lets go
+
+#Moving Forward (With stopping)
 def moving():
     endcon = 0
     while endcon < 15000:
