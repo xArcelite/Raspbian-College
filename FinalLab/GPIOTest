@@ -3,12 +3,12 @@ import time
 
 class GPIOTest(object):
 
-in1=12
-in2=13
-in3=20
-in4=21
-ena=6
-enb=26
+	in1=12
+	in2=13
+	in3=20
+	in4=21
+	ena=6
+	enb=26
 	
 	def __init__():
 		IN1 = in1
