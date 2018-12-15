@@ -8,12 +8,15 @@ in4=21
 ena=6
 enb=26
 	
-IN1 = in1
+IN1 = in1 #(In case I mess up spelling, I'm bad at this)
 IN2 = in2
 IN3 = in3
 IN4 = in4
 ENA = ena
 ENB = enb
+		
+DR = 16
+DL = 19
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
@@ -23,6 +26,8 @@ GPIO.setup(self.IN3,GPIO.OUT)
 GPIO.setup(self.IN4,GPIO.OUT)
 GPIO.setup(self.ENA,GPIO.OUT)
 GPIO.setup(self.ENB,GPIO.OUT)
+GPIO.setup(DR,GPIO.IN,GPIO.PUD_UP)
+GPIO.setup(DL,GPIO.IN,GPIO.PUD_UP)
 
 PWMA = GPIO.PWM(self.ENA,500)
 PWMB = GPIO.PWM(self.ENB,500)
@@ -82,3 +87,26 @@ def turntuner(left, right):
 		GPIO.output(self.IN3,GPIO.LOW)
 		GPIO.output(self.IN4,GPIO.HIGH)
 		self.PWMB.ChangeDutyCycle(0 - left)
+try:
+	while True:
+		DR_status = GPIO.input(DR)
+		DL_status = GPIO.input(DL)
+		if((DL_status == 1) and (DR_status == 1)):
+			forward()
+			print("forward")
+		elif((DL_status == 1) and (DR_status == 0)):
+			left()
+			print("left")
+		elif((DL_status == 0) and (DR_status == 1)):
+			right()
+			print("right")
+		else:
+			backward()
+			time.sleep(0.2)
+			left()
+			time.sleep(0.2)
+			stop()
+			print("backward")
+
+except KeyboardInterrupt:
+	GPIO.cleanup();
