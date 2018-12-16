@@ -82,35 +82,6 @@ def setPWMA(value):
 
 def setPWMB(value):
 	PWMB.ChangeDutyCycle(value)
-
-#Obstacle Avoidance
-def charge():
-	while True:
-		DR_status = GPIO.input(DR)
-		DL_status = GPIO.input(DL)
-		print(DL_status)
-		print(DR_status)
-		start = time.time() #start
-
-		if((DL_status == 1) and (DR_status == 1)):
-			forward()
-			print("forward")
-		elif((DL_status == 1) and (DR_status == 0)):
-			left()
-			print("left")
-		elif((DL_status == 0) and (DR_status == 1)):
-			right()
-			print("right")
-		else:
-			backward()
-			time.sleep(0.3)
-			left()
-			time.sleep(0.3)
-			stop()
-			print("backward")
-			
-		end = time.time() #stop
-		timegap = (stop - end) #time gap
 		
 #Camera part
 	
@@ -156,8 +127,6 @@ def contour_check(array): #Finding the Green light and making it a contour
     	#We make a bounding rectangle
         r = cv2.boundingRect(contours[index])
     return r,cont_l
-
-
 
 def scan():
 
@@ -225,12 +194,42 @@ def scan():
 				time.sleep(0.1)
 				print('the robot has landed')
      	 realframe.truncate(0) #Preparing next round
+	 
+#Obstacle Avoidance
+def charge():
+	while True:
+		DR_status = GPIO.input(DR)
+		DL_status = GPIO.input(DL)
+		print(DL_status)
+		print(DR_status)
+		start = time.time() #start
+
+		if((DL_status == 1) and (DR_status == 1)):
+			forward()
+			print("forward")
+		elif((DL_status == 1) and (DR_status == 0)):
+			left()
+			print("left")
+		elif((DL_status == 0) and (DR_status == 1)):
+			right()
+			print("right")
+		else:
+			backward()
+			time.sleep(0.3)
+			left()
+			time.sleep(0.3)
+			stop()
+			print("backward")
+			
+		end = time.time() #stop
+		timegap = (stop - end) #time gap
+		
+		if (timegap > 5.5): #Scan lock-on
+		scan()
+		start = time.time()
 
 def main():	
 	charge()
-	if (timegap > 5.5): #Scan lock-on
-		scan()
-		start = time.time()
 	#Randomizing controller for turning
 	rdirection = random.randint(1,2) 
 	#(This was honestly a bad idea)
