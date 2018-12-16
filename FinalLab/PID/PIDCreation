@@ -1,0 +1,28 @@
+import rospy
+from geometry_msgs.msg import Twist #We will use Twist instead of string
+from std_msgs.msg import Int32 #Message transferred 
+from __future__ import division
+from diff_drive import controller
+
+#There are 20 ticks per 360 rotation
+#Circumference is 6.5*pi = ~20CM
+#General tick per distance is 1CM.
+
+ TA8
+ TA9
+
+SAMPLETIME = 1
+
+class Encoder(object):
+    def __init__(self, pin):
+        self._value = 0
+        encoder = DigitalInputDevice(pin)
+        encoder.when_activated = self._increment
+        encoder.when_deactivated = self._increment
+    def reset(self):
+        self._value = 0
+    def _increment(self):
+        self._value += 1
+@property
+   def value(self):
+        return self._value
