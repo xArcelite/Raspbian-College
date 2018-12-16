@@ -169,7 +169,7 @@ def scan():
             cent_x-=128
             cent_y=80-cent_y
             print cent_x,cent_y
-      initial=400
+      initial=523 #Guessing the area because it will be different always
       memory=0  
       if(found==0):
             #Using memory to turn the robot
@@ -224,12 +224,8 @@ def main():
 	time.sleep(.5)
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        print('Interrupted')
-        try:
-		GPIO.cleanup()
-        	sys.exit(0)
-        except SystemExit:
-        	os._exit(0)
+	try:
+		main()
+	except KeyboardInterrupt:
+		stop();
+		GPIO.cleanup();
