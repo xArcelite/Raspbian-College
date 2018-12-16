@@ -29,19 +29,19 @@ DL = 19
 #initialization
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-GPIO.setup(self.IN1,GPIO.OUT)
-GPIO.setup(self.IN2,GPIO.OUT)
-GPIO.setup(self.IN3,GPIO.OUT)
-GPIO.setup(self.IN4,GPIO.OUT)
+GPIO.setup(IN1,GPIO.OUT)
+GPIO.setup(IN2,GPIO.OUT)
+GPIO.setup(IN3,GPIO.OUT)
+GPIO.setup(IN4,GPIO.OUT)
 
-GPIO.setup(self.ENA,GPIO.OUT)
-GPIO.setup(self.ENB,GPIO.OUT)
+GPIO.setup(ENA,GPIO.OUT)
+GPIO.setup(ENB,GPIO.OUT)
 
 GPIO.setup(DR,GPIO.IN,GPIO.PUD_UP)
 GPIO.setup(DL,GPIO.IN,GPIO.PUD_UP)
 
-PWMA = GPIO.PWM(self.ENA,500)
-PWMB = GPIO.PWM(self.ENB,500)
+PWMA = GPIO.PWM(ENA,500)
+PWMB = GPIO.PWM(ENB,500)
 PWMA.start(50)
 PWMB.start(50)
 
