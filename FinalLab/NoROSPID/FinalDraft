@@ -143,8 +143,8 @@ def contour_check(array): #Finding the Green light and making it a contour
     cont_l=0
     index=0
     #finding not only contours, but hierarchy
-    contours, hierarchy = cv2.findContours(array, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE) 
-    #RETR_TREE didn't work for some reason
+    contours, hierarchy = cv2.findContours(array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+    #RETR_TREE works and doesn't work sometimes
     for idx, contour in enumerate(contours):
         area=cv2.contourArea(contour)
 	#loop in case area exceeds the contour read
@@ -157,53 +157,74 @@ def contour_check(array): #Finding the Green light and making it a contour
         r = cv2.boundingRect(contours[index])
     return r,cont_l
 
+
+
 def scan():
-	if (w*h) < 10:
-            found=0
-	else:
-            found=1
-            simg2 = cv2.rectangle(frame,(x,y),(x+w,y+h),255,2)
-            cent_x=x+((w)/2) #double parenthesis just to be sure
-            cent_y=y+((h)/2)
-            cv2.circle(frame,(int(cent_x),int(cent_y)),3,(0,110,255),-1)
-            cent_x-=128
-            cent_y=80-cent_y
-            print cent_x,cent_y
-      initial=523 #Guessing the area because it will be different always
-      memory=0  
-      if(found==0):
-            #Using memory to turn the robot
-            if memory==0:
-                  right()
-                  time.sleep(0.05)
-            else:
-                  left()
-                  time.sleep(0.05)
-            stop()
-            time.sleep(0.0125)     
-      elif(found==1): #Actual Navigation
-            if(area<initial):
-                  stop()
-                  time.sleep(0.01)
-            elif(area>=initial):
-                  giantblob=4000
-                  if(area<giantblob):
-                        #Rotate towards the ball
-                        if(cent_x<=-30 or cent_x>=30):
-                              if(cent_x<0):
-                                    memory=0
-                                    right()
-                                    time.sleep(0.045)
-                              elif(cent_x>0):
-                                    memory=1
-                                    left()
-                                    time.sleep(0.045)
-                        stop()
-                        time.sleep(0.00625)
-                  else:
-                        stop()
-                        time.sleep(0.1)
-      realframe.truncate(0) #Preparing second round
+
+	area1=523 #approximation of "far" distance
+	area2=4000 #Appoximate area if robot is too close
+	
+	memory=0 #setting the conditions
+	cent_x=0
+	cent_y=0
+	
+	for image in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+		frame = image.array
+		frame = cv2.flip(frame,1)
+		global cent_x
+		global cent_y
+		
+		hsvref = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+		mask_green = sepcolor(frame) #getting the green
+		
+		variables,area = contour_check(mask_green)
+		x,y,w,h = variables
+
+		if (w*h) < 10:
+	            light=0
+		else:
+	            light=1
+	            simg2 = cv2.rectangle(frame,(x,y),(x+w,y+h),255,2)
+	            cent_x=x+((w)/2) #double parenthesis just to be sure
+	            cent_y=y+((h)/2)
+	            cv2.circle(frame,(int(cent_x),int(cent_y)),3,(0,110,255),-1)
+	            cent_x-=128
+	            cent_y=80-cent_y
+	            print cent_x,cent_y
+		    
+  
+		if(light==0):#Using memory to turn the robot, if robot is not found
+			if memory==0:
+       		           right()
+     	  	           time.sleep(0.2)
+			else:
+  	     	           left()
+   	    	           time.sleep(0.2)
+			stop()
+  	     		time.sleep(0.1)     
+ 		elif(light==1): #Actual Navigation
+ 	        	if(area<area1): #If object is far, but the 
+        	        	stop()
+	                	time.sleep(0.01)
+	        	elif(area>=area1): #If Robot is closer
+				if(area<area2):
+					#Rotate towards the Object
+       	                		if(cent_x<=-15 or cent_x>=15):
+        	    	                  if(cent_x<0):
+        	    	                        memory=0 #memory flag
+        	    	                        right()
+        	    	                        time.sleep(0.045)
+        	    	                  elif(cent_x>0):
+        	    	                        memory=1 #memory flag
+        	    	                        left()
+        	    	                        time.sleep(0.045)
+        	   	        	stop()
+        	   		        time.sleep(0.00625)
+			else: #Robot is too close
+				stop()
+				time.sleep(0.1)
+				print('the robot has landed')
+     	 realframe.truncate(0) #Preparing next round
 
 def main():	
 	charge()
