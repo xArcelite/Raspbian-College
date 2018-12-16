@@ -1,0 +1,258 @@
+import picamera.array
+import picamera
+import RPi.GPIO as GPIO
+import time
+import cv2
+import cv2.cv as cv
+import numpy as np
+import random
+
+#Motor Pins
+in1=12
+in2=13
+in3=20
+in4=21
+ena=6
+enb=26
+	
+IN1 = in1 #(In case I mess up spelling, I'm bad at this)
+IN2 = in2
+IN3 = in3
+IN4 = in4
+ENA = ena
+ENB = enb
+	
+#Obstacle Avoidance pins
+DR = 16
+DL = 19
+
+#initialization
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(IN1,GPIO.OUT)
+GPIO.setup(IN2,GPIO.OUT)
+GPIO.setup(IN3,GPIO.OUT)
+GPIO.setup(IN4,GPIO.OUT)
+
+GPIO.setup(ENA,GPIO.OUT)
+GPIO.setup(ENB,GPIO.OUT)
+
+GPIO.setup(DR,GPIO.IN,GPIO.PUD_UP)
+GPIO.setup(DL,GPIO.IN,GPIO.PUD_UP)
+
+PWMA = GPIO.PWM(ENA,500)
+PWMB = GPIO.PWM(ENB,500)
+PWMA.start(50)
+PWMB.start(50)
+
+#Defining Motor parameters
+
+def forward():
+	GPIO.output(IN1,GPIO.HIGH)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.HIGH)
+
+def stop():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.LOW)
+
+def backward():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.HIGH)
+	GPIO.output(IN3,GPIO.HIGH)
+	GPIO.output(IN4,GPIO.LOW)
+
+def left():
+	GPIO.output(IN1,GPIO.LOW)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.HIGH)
+
+def right():
+	GPIO.output(IN1,GPIO.HIGH)
+	GPIO.output(IN2,GPIO.LOW)
+	GPIO.output(IN3,GPIO.LOW)
+	GPIO.output(IN4,GPIO.LOW)
+		
+def setPWMA(value):
+	PWMA.ChangeDutyCycle(value)
+
+def setPWMB(value):
+	PWMB.ChangeDutyCycle(value)
+  
+#PID: We can't rely on the Line Tracker rake now.
+#So we have to rely on the optical sensor
+
+
+
+#Obstacle Avoidance
+def charge():
+	while True:
+		DR_status = GPIO.input(DR)
+		DL_status = GPIO.input(DL)
+		print(DL_status)
+		print(DR_status)
+		start = time.time() #start
+
+		if((DL_status == 1) and (DR_status == 1)):
+			forward()
+			print("forward")
+		elif((DL_status == 1) and (DR_status == 0)):
+			left()
+			print("left")
+		elif((DL_status == 0) and (DR_status == 1)):
+			right()
+			print("right")
+		else:
+			backward()
+			time.sleep(0.3)
+			left()
+			time.sleep(0.3)
+			stop()
+			print("backward")
+			
+		end = time.time() #stop
+		timegap = (stop - end) #time gap
+		
+#Camera part
+	
+camera = PiCamera()
+camera.resolution = (256, 160)
+camera.framerate = 16
+realframe = PiRGBArray(camera, size=(256, 160))
+time.sleep(0.02) #Camera warmup
+
+#Image Analysis
+def sepcolor(frame): #Getting only Green colors
+	#HSV for color
+    hsv =  cv2.cvtColor(frame, cv2.cv.CV_BGR2HSV)
+    mask_1 = cv2.inRange(hsv, np.array([29,86,6]), np.array([64,255,255]))
+    	#YCR for luminance (Don't know if it's necessary)
+    ycr = cv2.cvtColor(frame,cv2.cv.CV_BGR2YCrCb)
+    mask_2 = cv2.inRange(ycr, np.array((0,165,0)), np.array((255,255,255)))
+
+    mask = mask_1 
+    #I would do mask_1 | mask_2 for accuracy, but it seems unnecessary
+    
+    #Erode and Dilute to save framerate
+    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(mask, None, iterations=2)
+    
+    #cv2.imshow('mask',mask)
+    return mask
+
+def contour_check(array): #Finding the Green light and making it a contour
+    cont_l=0
+    index=0
+    #finding not only contours, but hierarchy
+    contours, hierarchy = cv2.findContours(array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+    #RETR_TREE works and doesn't work sometimes
+    for idx, contour in enumerate(contours):
+        area=cv2.contourArea(contour)
+	#loop in case area exceeds the contour read
+        if (area>cont_l) :
+            cont_l=area
+            index=idx
+    r=(0,0,2,2)
+    if len(contours) > 0:
+    	#We make a bounding rectangle
+        r = cv2.boundingRect(contours[index])
+    return r,cont_l
+
+
+
+def scan():
+
+	area1=523 #approximation of "far" distance
+	area2=4000 #Appoximate area if robot is too close
+	
+	memory=0 #setting the conditions
+	cent_x=0
+	cent_y=0
+	
+	for image in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+		frame = image.array
+		frame = cv2.flip(frame,1)
+		global cent_x
+		global cent_y
+		
+		hsvref = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+		mask_green = sepcolor(frame) #getting the green
+		
+		variables,area = contour_check(mask_green)
+		x,y,w,h = variables
+
+		if (w*h) < 10:
+	            light=0
+		else:
+	            light=1
+	            simg2 = cv2.rectangle(frame,(x,y),(x+w,y+h),255,2)
+	            cent_x=x+((w)/2) #double parenthesis just to be sure
+	            cent_y=y+((h)/2)
+	            cv2.circle(frame,(int(cent_x),int(cent_y)),3,(0,110,255),-1)
+	            cent_x-=128
+	            cent_y=80-cent_y
+	            print cent_x,cent_y
+		    
+  
+		if(light==0):#Using memory to turn the robot, if robot is not found
+			if memory==0:
+				right()
+				time.sleep(0.2)
+			else:
+				left()
+				time.sleep(0.2)
+			stop()
+  	     		time.sleep(0.1)     
+ 		elif(light==1): #Actual Navigation
+			if(area<area1): #If object is far, but the 
+        	        	stop()
+	                	time.sleep(0.01)
+			elif(area>=area1): #If Robot is closer
+				if(area<area2):
+					#Rotate towards the Object
+       	                		if(cent_x<=-15 or cent_x>=15):
+        	    	                  if(cent_x<0):
+        	    	                        memory=0 #memory flag
+        	    	                        right()
+        	    	                        time.sleep(0.045)
+        	    	                  elif(cent_x>0):
+        	    	                        memory=1 #memory flag
+        	    	                        left()
+        	    	                        time.sleep(0.045)
+        	   	        	stop()
+        	   		        time.sleep(0.00625)
+			else: #Robot is too close
+				stop()
+				time.sleep(0.1)
+				print('the robot has landed')
+     	 realframe.truncate(0) #Preparing next round
+
+def main():	
+	charge()
+	if (timegap > 5.5): #Scan lock-on
+		scan()
+		start = time.time()
+	#Randomizing controller for turning
+	rdirection = random.randint(1,2) 
+	#(This was honestly a bad idea)
+	rangle = random.random(0.3,0.5)
+	if(rdirection == 1):
+		left()
+		time.sleep(rangle)
+		stop()
+	if(rdirection == 2):
+		right()
+		time.sleep(rangle)
+		stop()
+	time.sleep(.5)
+
+if __name__ == '__main__':
+	try:
+		main()
+	except KeyboardInterrupt:
+		stop();
+		GPIO.cleanup();
