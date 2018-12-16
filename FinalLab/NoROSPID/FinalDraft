@@ -228,11 +228,12 @@ def scan():
 
 def main():	
 	charge()
-	if (timegap > 5.5):
+	if (timegap > 5.5): #Scan lock-on
 		scan()
 		start = time.time()
-	listofAnlges = random
-	rdirection = random.randint(1,2)
+	#Randomizing controller for turning
+	rdirection = random.randint(1,2) 
+	#(This was honestly a bad idea)
 	rangle = random.random(0.3,0.5)
 	if(rdirection == 1):
 		left()
