@@ -1,0 +1,18 @@
+import rospy
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist
+import serial
+
+
+rospy_init_node('rotate')
+
+ r = rospy.Rate(10)
+
+pubsliher = rospy.Publisher('/cmd_vel', Twist, queue_size = 1)
+
+rospy.timer(rospy.Duration(7.0), callback);
+
+while not rospy.is_shutdown():
+       msg = Twist()
+       
+       r.sleep()
