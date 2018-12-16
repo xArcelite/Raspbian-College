@@ -186,7 +186,7 @@ def scan():
                   stop()
                   time.sleep(0.01)
             elif(area>=initial):
-                  initial2=6700
+                  initial2=8000
                   if(area<initial2):
                         #Rotate towards the ball
                         if(cent_x<=-20 or cent_x>=20):
