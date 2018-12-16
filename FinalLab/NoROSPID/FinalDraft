@@ -180,22 +180,22 @@ def scan():
 					#Rotate towards the Object
        	                		if(cent_x<=-15 or cent_x>=15):
         	    	                  if(cent_x<0):
-        	    	                        memory=0 #memory flag
+        	    	                        memory=0 #memory
         	    	                        right()
         	    	                        time.sleep(0.045)
         	    	                  elif(cent_x>0):
-        	    	                        memory=1 #memory flag
+        	    	                        memory=1 #memory
         	    	                        left()
         	    	                        time.sleep(0.045)
         	   	        	stop()
         	   		        time.sleep(0.00625)
 			else: #Robot is too close
 				stop()
-				time.sleep(0.1)
+				time.sleep(20.0)
 				print('the robot has landed')
      	 realframe.truncate(0) #Preparing next round
 	 
-#Obstacle Avoidance
+#Obstacle Avoidance (Alphabot library)
 def charge():
 	while True:
 		DR_status = GPIO.input(DR)
@@ -224,7 +224,8 @@ def charge():
 		end = time.time() #stop
 		timegap = (stop - end) #time gap
 		
-		if (timegap > 5.5): #Scan lock-on
+		if (timegap > 4.0): #Scan lock-on
+		stop()
 		scan()
 		start = time.time()
 
