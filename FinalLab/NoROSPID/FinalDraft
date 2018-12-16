@@ -163,7 +163,7 @@ def scan():
 	else:
             found=1
             simg2 = cv2.rectangle(frame,(x,y),(x+w,y+h),255,2)
-            cent_x=x+((w)/2)
+            cent_x=x+((w)/2) #double parenthesis just to be sure
             cent_y=y+((h)/2)
             cv2.circle(frame,(int(cent_x),int(cent_y)),3,(0,110,255),-1)
             cent_x-=128
@@ -181,21 +181,21 @@ def scan():
                   time.sleep(0.05)
             stop()
             time.sleep(0.0125)     
-      elif(found==1):
+      elif(found==1): #Actual Navigation
             if(area<initial):
                   stop()
                   time.sleep(0.01)
             elif(area>=initial):
-                  initial2=8000
-                  if(area<initial2):
+                  giantblob=4000
+                  if(area<giantblob):
                         #Rotate towards the ball
-                        if(cent_x<=-20 or cent_x>=20):
+                        if(cent_x<=-30 or cent_x>=30):
                               if(cent_x<0):
-                                    flag=0
+                                    memory=0
                                     right()
                                     time.sleep(0.045)
                               elif(cent_x>0):
-                                    flag=1
+                                    memory=1
                                     left()
                                     time.sleep(0.045)
                         stop()
