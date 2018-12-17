@@ -42,8 +42,8 @@ GPIO.setup(DL,GPIO.IN,GPIO.PUD_UP)
 
 PWMA = GPIO.PWM(ENA,500)
 PWMB = GPIO.PWM(ENB,500)
-PWMA.start(50)
-PWMB.start(50)
+PWMA.start(22)
+PWMB.start(20)
 
 #Defining Motor parameters
 
@@ -87,126 +87,6 @@ def stopPWM():
 	PWMA.ChangeDutyCycle(0)	
 	PWMB.ChangeDutyCycle(0)
 	
-#Camera setup
-
-with picamera.PiCmera() as camera:
-  camera.resolution = (640,400)
-  camera.framerate = 14
-  while(True):
-    with picamera.array.PiRGBArray(camera) as stream:
-      camera.exposure_mode = 'auto'
-      camera.awb_mode = 'auto'
-      camera.capture(stream, format = 'bgr')
-      frame = stream.array
-      blur = cv2.GaussianBlur(frame, (11, 11), 0)
-      cv2.waitKey(1)
-
-lower_green = np.array([29,86,6])
-upper_green = np.array([64,255,255])
-
-
-#Image Analysis
-def sepcolor(frame): #Getting only Green colors
-	#HSV for color
-    hsv =  cv2.cvtColor(blur, cv2.cv.CV_BGR2HSV)
-    mask = cv2.inRange(hsv, lower_green,upper_green)
-    #I would do HSV | YGR for luminance, but it isn't necessary
-    
-    #Erode and Dilute to save framerate
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-    
-    maskarray = cv2.bitwise_and(maskarray, maskarray, mask=mask)
-    
-    othercolor = cv2.cvtColor(maskarray, cv2.COLOR_MGR2GRAY)
-    #cv2.imshow('mask',mask)
-    return mask
-
-def contour_check(array): #Finding the Green light and making it a contour
-    cont_l=0
-    index=0
-    #finding not only contours, but hierarchy
-    contours, hierarchy = cv2.findContours(array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
-    #RETR_TREE works and doesn't work sometimes
-    for idx, contour in enumerate(contours):
-        area=cv2.contourArea(contour)
-	#loop in case area exceeds the contour read
-        if (area>cont_l) :
-            cont_l=area
-            index=idx
-    r=(0,0,2,2)
-    if len(contours) > 0:
-    	#We make a bounding rectangle
-        r = cv2.boundingRect(contours[index])
-    return r,cont_l
-
-def scan():
-
-	area1=523 #approximation of "far" distance
-	area2=4000 #Appoximate area if robot is too close
-	
-	memory=0 #setting the conditions
-	cent_x=0
-	cent_y=0
-	
-	for image in camera.capture_continuous(stream, format="bgr", use_video_port=True):
-		frame = stream.array
-		frame = cv2.flip(frame,1)
-		global cent_x
-		global cent_y
-		
-		hsvref = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-		mask_green = sepcolor(frame) #getting the green
-		
-		variables,area = contour_check(mask_green)
-		x,y,w,h = variables
-
-		if (w*h) < 10:
-	            light=0
-		else:
-	            light=1
-	            simg2 = cv2.rectangle(frame,(x,y),(x+w,y+h),255,2)
-	            cent_x=x+((w)/2) #double parenthesis just to be sure
-	            cent_y=y+((h)/2)
-	            cv2.circle(frame,(int(cent_x),int(cent_y)),3,(0,110,255),-1)
-	            cent_x-=128
-	            cent_y=80-cent_y
-	            print cent_x,cent_y
-		    
-  
-		if(light==0):#Using memory to turn the robot, if robot is not found
-			if memory==0:
-				right()
-				time.sleep(0.2)
-			else:
-				left()
-				time.sleep(0.2)
-			stop()
-  	     		time.sleep(0.1)     
- 		elif(light==1): #Actual Navigation
-			if(area<area1): #If object is far, but the 
-        	        	stop()
-	                	time.sleep(0.01)
-			elif(area>=area1): #If Robot is closer
-				if(area<area2):
-					#Rotate towards the Object
-       	                		if(cent_x<=-15 or cent_x>=15):
-        	    	                  if(cent_x<0):
-        	    	                        memory=0 #memory
-        	    	                        right()
-        	    	                        time.sleep(0.045)
-        	    	                  elif(cent_x>0):
-        	    	                        memory=1 #memory
-        	    	                        left()
-        	    	                        time.sleep(0.045)
-        	   	        	stop()
-        	   		        time.sleep(0.00625)
-			else: #Robot is too close
-				stop()
-				time.sleep(20.0)
-				print('the robot has landed')
-     	 realframe.truncate(0) #Preparing next round
-	 
 #Obstacle Avoidance (Alphabot library)
 def charge():
 	while True:
@@ -241,25 +121,67 @@ def charge():
 		scan()
 		start = time.time()
 
-def main():	
-	charge()
-	#Randomizing controller for turning
-	rdirection = random.randint(1,2) 
-	#(This was honestly a bad idea)
-	rangle = random.random(0.3,0.5)
-	if(rdirection == 1):
-		left()
-		time.sleep(rangle)
-		stop()
-	if(rdirection == 2):
-		right()
-		time.sleep(rangle)
-		stop()
-	time.sleep(.5)
+w = 256
+h = 160
+cent_x = int(0.5*w)
+cent_y = int(0.5*h)
 
-if __name__ == '__main__':
-	try:
-		main()
-	except KeyboardInterrupt:
-		stop();
-		GPIO.cleanup();
+with picamera.PiCamera() as camera:
+	camera.resolution = (256,160)
+	while(True):
+		with picamera.array.PiRGHArray(camera) as stream:
+			camera.exposure_mode = 'auto'
+			camera.awb_mode = 'auto'
+			camera.capture(stream, format = 'bgr')
+			image = stream.array
+			blur = cv2.GaussainBlur(image,(11,11),0)
+			hsv = cv2.cvtColor(blur,cv2.COLOR_BGR2HSV)
+			pixAverage = int(np.average(stream.array[...,1]))
+			cv2.waitKey(1)
+			
+			blue_lower = np.array([100,150,0],np.uint8)
+			blue_upper = np.array([140,255,255],np.uint8)
+			
+			mask = cv2.inRange(hsv,blue_lower,blue_upper)
+			mask = cv2.erode(mask, None, iterations = 2)
+			mask = cv2.dilate(mask, Non, iterations = 2)
+			
+			contmask = cv2.inRange(hsv, blue_lower, blue_upper)
+			moments = cv2.moments(contmask, True)
+			if moments('m00']>=10:
+				x = moments['m10']/moments['m00']
+				y = moments['m01']/moments['m00']
+				cv2.circle(image,(int(x),int(y)), 5, (0,0,255),-1)
+				delta_x = x - cent_x
+				if (x-cent_x) > 14:
+					stop()
+					time.sleep(1.0)
+					right()
+					time.sleep(0.3)
+				elif (cent_x-x) > 14:
+					stop()
+					time.sleep(1.0)
+					left()
+					time.sleep(0.3)
+				elif ((x-centx) < 14) and ((centx-x) < 14):
+					stop()
+					time.sleep(1.0)
+					charge()
+					time.sleep(0.3)
+				else:
+					stop()
+					time.sleep(2.0)
+					rdirection = random.randint(1,2) 
+					#(This was honestly a bad idea)
+					rangle = random.random(0.3,0.5)
+					if(rdirection == 1):
+						left()
+						time.sleep(rangle)
+						stop()
+					if(rdirection == 2):
+						right()
+						time.sleep(rangle)
+						stop()
+					time.sleep(.5)
+				cv2.imshow('Frame',image)
+				cv2.imshow('Mask',mask)
