@@ -135,7 +135,7 @@ with picamera.PiCamera() as camera:
 			pixAverage = int(np.average(stream.array[...,1]))
 			cv2.waitKey(1)
 			
-			blue_lower = np.array([100,150,0],np.uint8)
+			blue_lower = np.array([100,200,200],np.uint8)
 			blue_upper = np.array([140,255,255],np.uint8)
 			
 			mask = cv2.inRange(hsv,blue_lower,blue_upper)
