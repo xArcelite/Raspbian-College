@@ -183,5 +183,5 @@ with picamera.PiCamera() as camera:
 						time.sleep(rangle)
 						stop()
 					time.sleep(.5)
-				cv2.imshow('Frame',image)
-				cv2.imshow('Mask',mask)
+			cv2.imshow('Frame',image)
+			cv2.imshow('Mask',mask)
