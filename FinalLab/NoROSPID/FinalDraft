@@ -107,9 +107,9 @@ def charge():
 			print("right")
 		else:
 			backward()
-			time.sleep(0.3)
+			time.sleep(0.5)
 			left()
-			time.sleep(0.3)
+			time.sleep(0.5)
 			stop()
 			print("backward")
 			
@@ -146,7 +146,6 @@ with picamera.PiCamera() as camera:
 			moments = cv2.moments(contmask, True)
 			
 			charge()
-			
 			
 			if (timegap > 4.0): #Scan lock-on
 				stop()
