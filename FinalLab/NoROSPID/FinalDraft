@@ -116,10 +116,6 @@ def charge():
 		end = time.time() #stop
 		timegap = (stop - end) #time gap
 		
-		if (timegap > 4.0): #Scan lock-on
-		stop()
-		scan()
-		start = time.time()
 
 w = 256
 h = 160
@@ -148,40 +144,47 @@ with picamera.PiCamera() as camera:
 			
 			contmask = cv2.inRange(hsv, blue_lower, blue_upper)
 			moments = cv2.moments(contmask, True)
-			if moments('m00']>=10:
-				x = moments['m10']/moments['m00']
-				y = moments['m01']/moments['m00']
-				cv2.circle(image,(int(x),int(y)), 5, (0,0,255),-1)
-				delta_x = x - cent_x
-				if (x-cent_x) > 14:
-					stop()
-					time.sleep(1.0)
-					right()
-					time.sleep(0.3)
-				elif (cent_x-x) > 14:
-					stop()
-					time.sleep(1.0)
-					left()
-					time.sleep(0.3)
-				elif ((x-centx) < 14) and ((centx-x) < 14):
-					stop()
-					time.sleep(1.0)
-					charge()
-					time.sleep(0.3)
-				else:
-					stop()
-					time.sleep(2.0)
-					rdirection = random.randint(1,2) 
-					#(This was honestly a bad idea)
-					rangle = random.random(0.3,0.5)
-					if(rdirection == 1):
-						left()
-						time.sleep(rangle)
+			
+			charge()
+			
+			
+			if (timegap > 4.0): #Scan lock-on
+				stop()
+				if moments('m00']>=10:
+					x = moments['m10']/moments['m00']
+					y = moments['m01']/moments['m00']
+					cv2.circle(image,(int(x),int(y)), 5, (0,0,255),-1)
+					delta_x = x - cent_x
+					if (x-cent_x) > 14:
 						stop()
-					if(rdirection == 2):
+						time.sleep(1.0)
 						right()
-						time.sleep(rangle)
+						time.sleep(0.3)
+					elif (cent_x-x) > 14:
 						stop()
-					time.sleep(.5)
+						time.sleep(1.0)
+						left()
+						time.sleep(0.3)
+					elif ((x-centx) < 14) and ((centx-x) < 14):
+						stop()
+						time.sleep(1.0)
+						charge()
+						time.sleep(0.3)
+					else:
+						stop()
+						time.sleep(2.0)
+						rdirection = random.randint(1,2) 
+						#(This was honestly a bad idea)
+						rangle = random.random(0.3,0.5)
+						if(rdirection == 1):
+							left()
+							time.sleep(rangle)
+							stop()
+						if(rdirection == 2):
+							right()
+							time.sleep(rangle)
+							stop()
+						time.sleep(.5)
+			start = time.time()
 			cv2.imshow('Frame',image)
 			cv2.imshow('Mask',mask)
