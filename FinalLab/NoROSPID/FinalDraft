@@ -82,31 +82,43 @@ def setPWMA(value):
 
 def setPWMB(value):
 	PWMB.ChangeDutyCycle(value)
-		
-#Camera part
+
+def stopPWM():
+	PWMA.ChangeDutyCycle(0)	
+	PWMB.ChangeDutyCycle(0)
 	
-camera = PiCamera()
-camera.resolution = (256, 160)
-camera.framerate = 16
-realframe = PiRGBArray(camera, size=(256, 160))
-time.sleep(0.02) #Camera warmup
+#Camera setup
+
+with picamera.PiCmera() as camera:
+  camera.resolution = (640,400)
+  camera.framerate = 14
+  while(True):
+    with picamera.array.PiRGBArray(camera) as stream:
+      camera.exposure_mode = 'auto'
+      camera.awb_mode = 'auto'
+      camera.capture(stream, format = 'bgr')
+      frame = stream.array
+      blur = cv2.GaussianBlur(frame, (11, 11), 0)
+      cv2.waitKey(1)
+
+lower_green = np.array([29,86,6])
+upper_green = np.array([64,255,255])
+
 
 #Image Analysis
 def sepcolor(frame): #Getting only Green colors
 	#HSV for color
-    hsv =  cv2.cvtColor(frame, cv2.cv.CV_BGR2HSV)
-    mask_1 = cv2.inRange(hsv, np.array([29,86,6]), np.array([64,255,255]))
-    	#YCR for luminance (Don't know if it's necessary)
-    ycr = cv2.cvtColor(frame,cv2.cv.CV_BGR2YCrCb)
-    mask_2 = cv2.inRange(ycr, np.array((0,165,0)), np.array((255,255,255)))
-
-    mask = mask_1 
-    #I would do mask_1 | mask_2 for accuracy, but it seems unnecessary
+    hsv =  cv2.cvtColor(blur, cv2.cv.CV_BGR2HSV)
+    mask = cv2.inRange(hsv, lower_green,upper_green)
+    #I would do HSV | YGR for luminance, but it isn't necessary
     
     #Erode and Dilute to save framerate
     mask = cv2.erode(mask, None, iterations=2)
     mask = cv2.dilate(mask, None, iterations=2)
     
+    maskarray = cv2.bitwise_and(maskarray, maskarray, mask=mask)
+    
+    othercolor = cv2.cvtColor(maskarray, cv2.COLOR_MGR2GRAY)
     #cv2.imshow('mask',mask)
     return mask
 
@@ -137,8 +149,8 @@ def scan():
 	cent_x=0
 	cent_y=0
 	
-	for image in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-		frame = image.array
+	for image in camera.capture_continuous(stream, format="bgr", use_video_port=True):
+		frame = stream.array
 		frame = cv2.flip(frame,1)
 		global cent_x
 		global cent_y
